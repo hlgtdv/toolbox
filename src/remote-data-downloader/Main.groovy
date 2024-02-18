@@ -12,7 +12,6 @@ config.allowedItemTypes = [
 		'ELEMENT_2',
 		'ELEMENT_3',
 	]
-config.workDirectory = './work'
-config.outputDirectory = './output'
+config.outputDirectory = './work'
 
 new DataDownloader(config).fetch('CONTAINER_1', 'Container1')
