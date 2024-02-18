@@ -1,97 +1,76 @@
 package local
 
-import java.util.logging.*
-
+import java.util.logging.Logger
+import java.util.logging.Level
 import org.yaml.snakeyaml.Yaml
 import org.yaml.snakeyaml.DumperOptions
 
 class DataDownloader {
-
-	class Ref {
-		def type
-		def id
-
-		Ref(type, id) {			
-			this.type = type
-			this.id = id
-		}
-		
-		String toString() {
-			return "${this.type}:${this.id}"
-		}
-
-		String toFilename() {
-			return "${this.type}-${this.id}.xml"
-		}
-	}
-
 	static final def LOGGER = Logger.getLogger(this.class.name)
 	static final def XML_SLURPER = new XmlSlurper()
 
 	def config
-	def outputDir
 	def mapItemToItems
+	def outputDir
 	def yaml
 
 	DataDownloader(config) {
 		this.config = config
-		this.outputDir = new File(this.config.outputDirectory)
 		this.mapItemToItems = [ : ]
-
-		def dumperOptions = new DumperOptions()
-		dumperOptions.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK)
-		this.yaml = new Yaml(dumperOptions)
 	}
 	
-	def begin(itemRef) {
+	def begin(itemType, itemId) {
+		this.outputDir = new File(this.config.outputDirectory)
 		this.outputDir.mkdirs()
 		this.outputDir.eachFileRecurse { it.delete() }
 		
-		this.mapItemToItems['root'] = itemRef.toString()
+		def dumperOptions = new DumperOptions()
+		dumperOptions.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK)
+		this.yaml = new Yaml(dumperOptions)
+
+		this.mapItemToItems['root'] = "${itemType}:${itemId}".toString()
 	}
 
 	def fetch(itemType, itemId, level=0) {
 		if (! (itemType in this.config.allowedItemTypes)) {
 			return
 		}
-		def itemRef = new Ref(itemType, itemId)
 
 		if (level == 0) {
-			this.begin(itemRef)
+			this.begin(itemType, itemId)
 		}
-
-		LOGGER.log(Level.INFO, "Downloading: ${itemRef} ...")
+		LOGGER.log(Level.INFO, "Downloading: ${itemType}:${itemId} ...")
 		
 		def rootItem = this.config.remoteSystem.findItem(itemType, itemId)
-		this.saveItem(itemRef, rootItem)
+		this.saveItem(itemType, itemId, rootItem)
 		
 		def subItemsRefs = this.findSubItemsRefsIn(rootItem)
 		
 		for (subItemRef in subItemsRefs) {
-			this.fetch(subItemRef.type, subItemRef.id, level + 1)
-			
-			this.mapItemToItems.computeIfAbsent(itemRef.toString(), k -> []) << subItemRef.toString()			
+			this.fetch(subItemRef.type, subItemRef.id, level + 1)			
+
+			this.mapItemToItems.computeIfAbsent("${itemType}:${itemId}".toString(), k -> [])
+				<< "${subItemRef.type}:${subItemRef.id}".toString()
 		}
 		if (level == 0) {
 			this.end()
 		}
 	}
 
-	def saveItem(itemRef, item) {
-		new File("${this.outputDir}/${itemRef.toFilename()}") << item.trim()
-	}
-	
 	def findSubItemsRefsIn(item) {
 		def definition = XML_SLURPER.parseText(item)
 		def subItemsRefs = definition.'**'.findAll { node ->
 				node.name() == 'item-ref'
 			}.collect { node ->
-				return new Ref(node.@type, node.@id)
+				return [type: node.@type, id: node.@id]
 			}
-
 		return subItemsRefs
 	}
 
+	def saveItem(itemType, itemId, item) {
+		new File("${this.outputDir}/${itemType}-${itemId}.xml") << item.trim()
+	}
+	
 	def end() {
 		new File("${this.outputDir}/index.yaml") << this.yaml.dump(mapItemToItems)
 	}
