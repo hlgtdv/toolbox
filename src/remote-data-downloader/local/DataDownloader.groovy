@@ -3,6 +3,7 @@ package local
 import java.util.logging.*
 
 import org.yaml.snakeyaml.Yaml
+import org.yaml.snakeyaml.DumperOptions
 
 class DataDownloader {
 
@@ -38,7 +39,10 @@ class DataDownloader {
 		this.workDir = new File(this.config.workDirectory)
 		this.outputDir = new File(this.config.outputDirectory)
 		this.mapItemToItems = [ : ]
-		this.yaml = new Yaml()
+
+		def dumperOptions = new DumperOptions()
+		dumperOptions.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK)
+		this.yaml = new Yaml(dumperOptions)
 	}
 	
 	def begin(itemRef) {
