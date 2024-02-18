@@ -1,16 +1,22 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
- 
   <groupId>util</groupId>
   <artifactId>toolbox</artifactId>
   <version>1.0-SNAPSHOT</version>
-  
   <build>
 	  <plugins>
 		<plugin>
 		  <groupId>org.codehaus.gmaven</groupId>
 		  <artifactId>groovy-maven-plugin</artifactId>
+		  <dependencies>
+			<dependency>
+				<groupId>org.apache.groovy</groupId>
+				<artifactId>groovy-all</artifactId>
+				<version>4.0.18</version>
+				<type>pom</type>
+			</dependency>
+		  </dependencies>
 			<executions>
 			  <execution>
 				<phase>generate-resources</phase>
@@ -19,10 +25,10 @@
 				</goals>
 				<configuration>
 					<scriptpath>
-						${project.basedir}/remote-data-downloader
+						${project.basedir}/src/remote-data-downloader
 					</scriptpath>
 					<source>
-						${project.basedir}/remote-data-downloader/Main.groovy
+						${project.basedir}/src/remote-data-downloader/Main.groovy
 					</source>
 				</configuration>
 			  </execution>
@@ -30,5 +36,4 @@
 		</plugin>
 	  </plugins>
    </build>
-
 </project>
