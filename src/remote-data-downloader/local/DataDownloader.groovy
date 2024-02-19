@@ -72,6 +72,6 @@ class DataDownloader {
 	}
 	
 	def end() {
-		new File("${this.outputDir}/index.yaml") << this.yaml.dump(mapItemToItems)
+		new File("${this.outputDir}/structure.yaml") << this.yaml.dump(mapItemToItems)
 	}
 }
