@@ -1,0 +1,58 @@
+Class:packageName1:ClassName1:
+    attributes:
+        '@class':  Class
+        package: packageName1
+        name:    ClassName1
+    relations:
+    -   type:    <<C>>
+        ref:     Attribute:packageName1.ClassName1:id
+    -   type:    <<C>>
+        ref:     Attribute:packageName1.ClassName1:foo
+
+Attribute:packageName1.ClassName1:id:
+    attributes:
+        '@class':  Attribute
+        class:   packageName1.ClassName1
+        name:    id
+        type:    integer
+
+Attribute:packageName1.ClassName1:foo:
+    attributes:
+        '@class':  Attribute
+        class:   packageName1.ClassName1
+        name:    foo
+        type:    string
+
+Class:packageName2:ClassName2:
+    attributes:
+        '@class':  Class
+        package: packageName2
+        name:    ClassName2
+    relations:
+    -   type:    <<C>>
+        ref:     Attribute:packageName2.ClassName2:id
+    -   type:    <<C>>
+        ref:     Attribute:packageName2.ClassName2:bar
+
+Attribute:packageName2.ClassName2:id:
+    attributes:
+        '@class':  Attribute
+        class:   packageName2.ClassName2
+        name:    id
+        type:    integer
+
+Attribute:packageName2.ClassName2:bar:
+    attributes:
+        '@class':  Attribute
+        class:   packageName2.ClassName2
+        name:    bar
+        type:    string
+
+Relation:<<use>>:
+    attributes:
+        '@class':  Relation
+        name:    <<use>>
+    relations:
+    -   type:     <<P>>
+        ref-from: Class:packageName1:ClassName1
+        ref-to:   Class:packageName2:ClassName2

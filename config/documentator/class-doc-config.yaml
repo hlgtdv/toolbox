@@ -1,0 +1,26 @@
+on-documentate:
+    type: Class
+    set:
+    when:
+    process:
+        set:
+            class-index-entry: |
+                <a href="">${attributes.package}.${attributes.name}</a>
+            puml-class-begin: |
+                class "${attributes.package}.${attributes.name}" {
+            puml-class-end: |
+                }
+            doc-class-title: |
+                <h1>Classe ${attributes.package}.${attributes.name}</h1>
+        documents:
+            add-section:
+            -   id:       index.html/${attributes.package}/${attributes.name}
+                content:  ${class-index-entry}
+            -   id:       class-diagram.puml/${attributes.package}/${attributes.name}/class-begin
+                content:  ${puml-class-begin}
+            -   id:       class-diagram.puml/${attributes.package}/${attributes.name}/class-end
+                content:  ${puml-class-end}
+            -   id:       ${attributes.package}.${attributes.name}.html/title
+                content:  ${doc-class-title} 
+            -   id:       ${attributes.package}.${attributes.name}.html/content
+                template: class-content
