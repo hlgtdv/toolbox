@@ -9,7 +9,7 @@ class RepositoryDocumentator {
 		
 		static def method() {
 			
-			return "pouet"
+			return "unimplemented method"
 		}
 	}
 
