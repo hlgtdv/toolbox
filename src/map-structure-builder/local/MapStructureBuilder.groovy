@@ -23,40 +23,78 @@ public class MapStructureBuilder {
 		def value = this.mapAliasIndex[alias]
 		
 		if (value == null) {
-			throw new RuntimeException("[at()] Alias not found: (${alias})")
+			throw new RuntimeException("Alias not found: (${alias})")
 		}
 
-		if (alias != '.') {
-			this.setCurrent(alias, value)
-		}
+		this.setCurrent(alias, value)
 
 		return this
 	}
 
-	def getKey(key) {
+	def getEntry(key) {
+		return getEntryAs(key, key)
+	}
+
+	def getEntryAs(key, alias, defaultValue=[:]) {
+		def isAliased = alias != key
+
 		if (! (this.currentValue instanceof Map)) {
-			throw new RuntimeException("[getKey()] Can't get key from element: (${key}) <- (${this.currentValue})")
+			throw new RuntimeException("Can't get key from element: (${key}) <- (${this.currentValue})")
 		}
 		def value = this.currentValue[key]
 	
 		if (value == null) {
-			this.currentValue[key] = value = [:]
+			this.currentValue[key] = value = defaultValue
 		}
 		this.setCurrent(key, value)
+
+		if (isAliased) {
+			this.mapAliasIndex[alias] = value
+		}
 
 		return this
 	}
 
-	def setKey(key, value) {
-		return this.setKeyAs(key, value, key)
+	def getListEntry(key) {
+		return getListEntryAs(key, key)
 	}
 
-	def setKeyAs(key, value, alias) {
+	def getListEntryAs(key, alias) {
+		return getEntryAs(key, alias, [])
+	}
+
+	def getElementAt(index) {
+		if (! (this.currentValue instanceof List)) {
+			throw new RuntimeException("Can't get element at ${index} from: (${this.currentValue})")
+		}
+		def value = this.currentValue[index]
+
+		this.setCurrent("${this.currentKey}[${index}]", value)
+
+		return this
+	}
+	
+	def addElement() {
+		if (! (this.currentValue instanceof List)) {
+			throw new RuntimeException("Can't add element to: (${this.currentValue})")
+		}
+		def value = [:]
+		
+		this.currentValue << value
+		this.currentValue = value
+
+		return this
+	}
+
+	def setEntry(key, value) {
+		return this.setEntryAs(key, value, key)
+	}
+
+	def setEntryAs(key, value, alias) {
 		def isAliased = alias != key
 		
 		if (! (this.currentValue instanceof Map)) {
-			def suffix = isAliased ? 'As' : ''
-			throw new RuntimeException("[setKey${suffix}()] Can't add key to element: (${key}) -> (${this.currentValue})")
+			throw new RuntimeException("Can't add key to element: (${key}) -> (${this.currentValue})")
 		}
 		this.currentValue[key] = this.mapAliasIndex[key] = value
 		
@@ -67,18 +105,6 @@ public class MapStructureBuilder {
 		return this
 	}
 
-	def addElement() {
-		if (! (this.currentValue instanceof List)) {
-			throw new RuntimeException("[addElement()] Can't add element to: (${this.currentValue})")
-		}
-		def value = [:]
-		this.currentValue << value
-
-		this.currentValue = value
-
-		return this
-	}
-	
 	String toString() {
 		def s = "=============\n"
 		s += "MAP STRUCTURE\n"
@@ -92,6 +118,12 @@ public class MapStructureBuilder {
 		mapAliasIndex.each { key, value ->
 			s += "${key}\t->\t${value}\n"
 		}
+		s += "\n"
+		s += "=======\n"
+		s += "CURRENT\n"
+		s += "=======\n"
+		s += "${this.currentKey}\t->\t${this.currentValue}\n"
+		s += "\n"
 		
 		return s
 	}
