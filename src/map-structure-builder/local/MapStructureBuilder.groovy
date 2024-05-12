@@ -1,6 +1,6 @@
 package local
 
-public class MapStructureBuilder {
+public class MapStructureBuilder extends StructureBuilder {
 
 	def mapStructure	= [:]
 	def mapAliasIndex	= [:]
@@ -73,6 +73,15 @@ public class MapStructureBuilder {
 
 		return this
 	}
+
+	def getLastElement() {
+		if (! (this.currentValue instanceof List)) {
+			throw new RuntimeException("Can't get last element from: (${this.currentValue})")
+		}
+		getElementAt(this.currentValue.size() - 1)
+
+		return this
+	}	
 	
 	def addElement() {
 		if (! (this.currentValue instanceof List)) {
@@ -105,7 +114,7 @@ public class MapStructureBuilder {
 		return this
 	}
 
-	String toString() {
+	String display() {
 		def s = "=============\n"
 		s += "MAP STRUCTURE\n"
 		s += "=============\n"
@@ -124,7 +133,7 @@ public class MapStructureBuilder {
 		s += "=======\n"
 		s += "${this.currentKey}\t->\t${this.currentValue}\n"
 		s += "\n"
-		
-		return s
+
+		println s
 	}
 }
