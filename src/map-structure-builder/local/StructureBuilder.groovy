@@ -5,6 +5,31 @@ import org.yaml.snakeyaml.DumperOptions
 
 public class StructureBuilder {
 
+	static def DEFAULT_TRAVERSAL_HANDLER = [
+		beforeTraversal : {
+			println "[Before     ] Start of traversal ${'-' * 100}"
+		},
+		beforeMapTraversal : { level, path, element ->
+			println "[Before Map ] At level ${level}, ${path} -> ${element} : ${element.getClass().simpleName}"
+		},
+		afterMapTraversal : { level, path, element ->
+			println "[After Map  ] At level ${level}, ${path} -> ${element} : ${element.getClass().simpleName}"
+		},
+		beforeListTraversal : { level, path, element ->
+			println "[Before List] At level ${level}, ${path} -> ${element} : ${element.getClass().simpleName}"
+		},
+		afterListTraversal : { level, path, element ->
+			println "[After List ] At level ${level}, ${path} -> ${element} : ${element.getClass().simpleName}"
+		},
+		onElementTraversal : { level, path, element ->
+			println "[Element    ] At level ${level}, ${path} -> ${element} : ${element.getClass().simpleName}"
+		},
+		afterTraversal : {
+			println "[After      ] End of traversal ${'-' * 102}"
+		}		
+	]
+	static def RE_IDENTIFIER = /\w+([-:]\w+)*/
+
 	def yaml
 	def structure
 	def aliasIndex
@@ -65,8 +90,8 @@ public class StructureBuilder {
 
 		if (this.lookAhead('@')) {
 			this.readToken('@')
-			identifier = this.readTokenAsRegex(/\w+/)
-                                    						this.manageAlias(identifier, true)
+			identifier = this.readTokenAsRegex(RE_IDENTIFIER)
+                                    							this.manageAlias(identifier, true)
 		}
 
 		while (! this.lookAhead('<EOL>')) {
@@ -74,29 +99,29 @@ public class StructureBuilder {
 
 			if (this.lookAhead('*')) {
 				token = this.readToken('*')
-															this.manageElementBy(token)
+																this.manageElementBy(token)
 			}
 			else if (this.lookAhead('+')) {
 				token = this.readToken('+')
-															this.manageElementBy(token)
+																this.manageElementBy(token)
 			}
 			else if (this.lookAheadAsRegex(/\d+/)) {
 				integer = this.readTokenAsRegex(/\d+/)
-															this.manageElementBy(integer)
+																this.manageElementBy(integer)
 			}
-			else if (this.lookAheadAsRegex(/\w+/)) {
-				identifier = this.readTokenAsRegex(/\w+/)
-															this.manageElementBy(identifier)
+			else if (this.lookAheadAsRegex(RE_IDENTIFIER)) {
+				identifier = this.readTokenAsRegex(RE_IDENTIFIER)
+																this.manageElementBy(identifier)
 			}
 			else {
 				token = this.readToken('.')
-															this.manageElementBy(token)
+																this.manageElementBy(token)
 			}
 
 			if (this.lookAhead('@')) {
 				this.readToken('@')
-				identifier = this.readTokenAsRegex(/\w+/)
-															this.manageAlias(identifier) 
+				identifier = this.readTokenAsRegex(RE_IDENTIFIER)
+																this.manageAlias(identifier) 
 			}
 		}
 		this.readToken('<EOL>')
@@ -110,7 +135,7 @@ public class StructureBuilder {
 			type = List
 			accessor = accessor as Integer
 		}
-		else if (accessor ==~ /\w+/) {
+		else if (accessor ==~ RE_IDENTIFIER) {
 			type = Map
 		}
 		else if (accessor == '.') {
@@ -165,20 +190,32 @@ public class StructureBuilder {
 	private def fetchCurrentElement(createIfAbsent) {
 		def currentElement = this.structure
 		def elem = this.elements[0]
+		def checkType = true
 
 		if (elem.type == "Alias") {
 			currentElement = this.aliasIndex[elem.name]
+			checkType = false
 		}
 		else if (currentElement == null) {
 			currentElement = this.structure = elem.type == Map ? [:] : []
 		}
 		this.elements.eachWithIndex { element, i ->
+			if (element.type != null && element.type != "Alias" && ! element.type.isInstance(currentElement)) {
+				throw new RuntimeException("Type [${currentElement.getClass().simpleName}] found whereas type"
+					+ " [${element.type.simpleName}] expected at path [${this.path}]")
+			}
+
 			if (element.accessor != null) {
 				def nextElement = this.elements[i + 1]
 				def accessor
 				def e
 
 				if (element.accessor instanceof Integer) {
+					if (! (currentElement instanceof List)) {
+						throw new RuntimeException("List accessor not allowed with the type"
+							+ " [${currentElement.getClass().simpleName}] in path [${this.path}]")
+					}
+
 					if (element.accessor == -1) {
 						accessor = Math.max(0, currentElement.size() - 1)
 					}
@@ -191,10 +228,11 @@ public class StructureBuilder {
 
 						if (! createIfAbsent) {
 							if (currentElement.size() == 0) {
-								throw new RuntimeException("List accessor [${accessor + 1}] used with empty list")
+								throw new RuntimeException("List accessor used with empty list in path [${this.path}]")
 							}
 							else if (accessor >= currentElement.size()) {
-								throw new RuntimeException("List accessor [${accessor + 1}] not in [1 .. ${currentElement.size()}]")
+								throw new RuntimeException("List accessor not in [1 .. ${currentElement.size()}]"
+									+ " in path [${this.path}]")
 							}
 						}
 					}
@@ -202,8 +240,14 @@ public class StructureBuilder {
 				else {
 					accessor = element.accessor
 
+					if (! (currentElement instanceof Map)) {
+						throw new RuntimeException("Map accessor not allowed with the type"
+							+ " [${currentElement.getClass().simpleName}] in path [${this.path}]")
+					}
+
 					if (! createIfAbsent && ! (accessor in currentElement)) {
-						throw new RuntimeException("Map accessor [${accessor}] not found in ${currentElement.keySet()}")
+						throw new RuntimeException("Map accessor not found in ${currentElement.keySet()}"
+							+ " in path [${this.path}]")
 					}
 				}
 				e = currentElement[accessor]
@@ -218,7 +262,8 @@ public class StructureBuilder {
                 }
                 else {
 					if (nextElement != null && nextElement.type != null && ! nextElement.type.isInstance(e)) {
-						throw new RuntimeException("Type [${e.getClass()}] found whereas type [${nextElement.type}] expected")
+						throw new RuntimeException("Type [${e.getClass().simpleName}] found whereas type"
+							+ " [${nextElement.type}] expected at path [${this.path.simpleName}]")
 					}
                 }
                 currentElement = e
@@ -260,38 +305,39 @@ public class StructureBuilder {
 		}
 	}
 
-	static def doByDefaultBeforeTraversal = {
-		println "[Before ] Start of traversal ${'-' * 100}"
+	private def startTraversal(container, traversalHandler) {
+		traversalHandler.beforeTraversal?.call()
+		this.doTraversal(0, [], container, traversalHandler)
+		traversalHandler.afterTraversal?.call()
 	}
 
-	static def doByDefaultOnElementTraversal = { element, level, accessor ->
-		accessor = accessor == null ? "" : "accessor ${accessor} -> "
-		println "[Element] At level ${level}, ${accessor}${element} : ${element.getClass().simpleName}"
-	}
+	protected def doTraversal(level, accessors, element, traversalHandler) {
+		def path = "/" + accessors.join("/")
+		path = path == "/" ? "${path}." : path
 
-	static def doByDefaultAfterTraversal = {
-		println "[After  ] End of traversal ${'-' * 102}"
-	}
-
-	protected def doTraversal(element, level, accessor, onElementTraversal, beforeTraversal, afterTraversal) {
 		if (element instanceof Map) {
-			onElementTraversal.call(element, level, accessor)
+			traversalHandler.beforeMapTraversal?.call(level, path, element)
 
 			element.each { key, value ->
-				this.doTraversal(value, level + 1, key, onElementTraversal, beforeTraversal, afterTraversal)
+				accessors << key
+				this.doTraversal(level + 1, accessors, value, traversalHandler)
+				accessors.removeLast()
 			}
+			traversalHandler.afterMapTraversal?.call(level, path, element)
 		}
 		else if (element instanceof List) {
-			onElementTraversal.call(element, level, accessor)
+			traversalHandler.beforeListTraversal?.call(level, path, element)
 
 			element.eachWithIndex { value, i ->
-				this.doTraversal(value, level + 1, i + 1, onElementTraversal, beforeTraversal, afterTraversal)
+				accessors << i + 1
+				this.doTraversal(level + 1, accessors, value, traversalHandler)
+				accessors.removeLast()
 			}
+			traversalHandler.afterListTraversal?.call(level, path, element)
 		}
 		else {
-			onElementTraversal.call(element, level, accessor)
+			traversalHandler.onElementTraversal?.call(level, path, element)
 		}
-		return this
 	}
 
 	def reset(resetStructure = true) {
@@ -357,78 +403,50 @@ public class StructureBuilder {
 		return container
 	}
 
-	def traverse(onElementTraversal = null, beforeTraversal = null, afterTraversal = null) {
-		beforeTraversal = beforeTraversal == null ? doByDefaultBeforeTraversal : beforeTraversal
-		onElementTraversal = onElementTraversal == null ? doByDefaultOnElementTraversal : onElementTraversal
-		afterTraversal = afterTraversal == null ? doByDefaultAfterTraversal : afterTraversal
-
-		beforeTraversal()
-		this.doTraversal(this.structure, 0, null, onElementTraversal, beforeTraversal, afterTraversal)
-		afterTraversal()
+	def traverse(traversalHandler = DEFAULT_TRAVERSAL_HANDLER) {
+		this.startTraversal(this.structure, traversalHandler)
 
 		return this
 	}
 
-	def traverseFromContainer(container, onElementTraversal = null, beforeTraversal = null, afterTraversal = null) {
-		beforeTraversal = beforeTraversal == null ? doByDefaultBeforeTraversal : beforeTraversal
-		onElementTraversal = onElementTraversal == null ? doByDefaultOnElementTraversal : onElementTraversal
-		afterTraversal = afterTraversal == null ? doByDefaultAfterTraversal : afterTraversal
-
-		beforeTraversal()
-		this.doTraversal(container, 0, null, onElementTraversal, beforeTraversal, afterTraversal)
-		afterTraversal()
+	def traverseFromContainer(container, traversalHandler = DEFAULT_TRAVERSAL_HANDLER) {
+		this.startTraversal(container, traversalHandler)
 
 		return this
 	}
 
-	def traverseFromPath(path, onElementTraversal = null, beforeTraversal = null, afterTraversal = null) {
-		beforeTraversal = beforeTraversal == null ? doByDefaultBeforeTraversal : beforeTraversal
-		onElementTraversal = onElementTraversal == null ? doByDefaultOnElementTraversal : onElementTraversal
-		afterTraversal = afterTraversal == null ? doByDefaultAfterTraversal : afterTraversal
-
+	def traverseFromPath(path, traversalHandler = DEFAULT_TRAVERSAL_HANDLER) {
 		def container = getElementAt(path, false)
 
 		if (container != null) {
-			beforeTraversal()
-			this.doTraversal(container, 0, null, onElementTraversal, beforeTraversal, afterTraversal)
-			afterTraversal()
+			this.startTraversal(container, traversalHandler)
 		}
 		return this
 	}
 
 	def index() {
-		def accessors = []
-		def beforeTraversal = { }
-		def afterTraversal = { }
-		def onElementTraversal = { element, level, accessor ->
-			if (level > 0) {
-				accessors[level - 1] = accessor
-				def path = "/" + accessors.subList(0, level).join("/")
+		this.traverse([
+			beforeMapTraversal : { level, path, element ->
+				println "${path} -> ${element.getClass().simpleName}: { *=${element.size()}"
+			},
+			beforeListTraversal : { level, path, element ->
+				println "${path} -> ${element.getClass().simpleName}: [ *=${element.size()}"
+			},
+			onElementTraversal : { level, path, element ->
 				def value
 
-				if (element instanceof Map) {
-					value = "{ *=${element.size()}"
-				}
-				else if (element instanceof List) {
-					value = "[ *=${element.size()}"
-				}
-				else {
-					if (element != null) {
-						if (element instanceof String) {
-							def p = element.indexOf("\n")
-							value = p > -1 ? element.substring(0, p) + " [...]" : element
-						}
-						else {
-							value = element
-						}
+				if (element != null) {
+					if (element instanceof String) {
+						def p = element.indexOf("\n")
+						value = p > -1 ? element.substring(0, p) + " [...]" : element
+					}
+					else {
+						value = element
 					}
 				}
 				println "${path} -> ${element.getClass().simpleName}: ${value}"
-			}
-		}
-		beforeTraversal()
-		this.doTraversal(this.structure, 0, null, onElementTraversal, beforeTraversal, afterTraversal)
-		afterTraversal()
+			},
+		])
 
 		return this
 	}
