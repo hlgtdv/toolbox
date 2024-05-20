@@ -67,17 +67,17 @@ mapStructureBuilder
 	.addEntries("@lvl1/level2/.", "key3", 3)
 	.debug()
 
-println mapStructureBuilder.getValue("/level1")
-println mapStructureBuilder.getValue("@lvl1/level2")
-println mapStructureBuilder.getValue("/level1/key1")
-println mapStructureBuilder.getValue("@lvl1/key1")
-println mapStructureBuilder.getValue("@lvl1/level2/key3")
+println mapStructureBuilder.getValueAt("/level1")
+println mapStructureBuilder.getValueAt("@lvl1/level2")
+println mapStructureBuilder.getValueAt("/level1/key1")
+println mapStructureBuilder.getValueAt("@lvl1/key1")
+println mapStructureBuilder.getValueAt("@lvl1/level2/key3")
 
-println mapStructureBuilder.getValue("/level1/key_UNKNOWN", 999)
+println mapStructureBuilder.getValueAt("/level1/key_UNKNOWN", 999)
 
 try {
 	// FIXME: No Exception thrown...
-	println mapStructureBuilder.getValue("/*")
+	println mapStructureBuilder.getValueAt("/*")
 } catch (Exception e) { println "$e\n" }
 
 mapStructureBuilder
@@ -86,13 +86,13 @@ mapStructureBuilder
 	.addEntries('/+/.')
 	.debug()
 
-println mapStructureBuilder.getValue("/*")
-println mapStructureBuilder.getValue("/1")
-println mapStructureBuilder.getValue("/2")
-println mapStructureBuilder.getValue("/3")
+println mapStructureBuilder.getValueAt("/*")
+println mapStructureBuilder.getValueAt("/1")
+println mapStructureBuilder.getValueAt("/2")
+println mapStructureBuilder.getValueAt("/3")
 
 try {
-	println mapStructureBuilder.getValue("/9")
+	println mapStructureBuilder.getValueAt("/9")
 } catch (Exception e) { println "$e\n" }
 
 mapStructureBuilder
@@ -103,7 +103,7 @@ mapStructureBuilder
 
 	.traverse()
 	.traverseFromPath("/*/*")
-	.traverseFromContainer(mapStructureBuilder.getValue("/*/3"))
+	.traverseFromContainer(mapStructureBuilder.getValueAt("/*/3"))
 
 	.index()
 
@@ -125,6 +125,47 @@ mapStructureBuilder
 mapStructureBuilder
 	.traverse()
 	.traverseFromPath("/a")
-	.traverseFromContainer(mapStructureBuilder.getValue("/a/b"))
+	.traverseFromContainer(mapStructureBuilder.getValueAt("/a/b"))
 
 	.index()
+	.indexFromPath("/a")
+	.indexFromContainer(mapStructureBuilder.getValueAt("/a/b"))
+
+mapStructureBuilder
+	.reset()
+	.addEntries("/+/.",
+		'@class', 'AItem',
+		'id', 1,
+		'label', 'AItem 1 label')
+	.addEntries("/+/.",
+		'@class', "'BItem'",
+		'id', 1,
+		'label', 'BItem 1 label')
+	.addEntries("/+/.",
+		'@class', 'AItem',
+		'id', 2,
+		'label', 'AItem 2 label')
+	.addEntries("/+/.",
+		'@class', 'BItem',
+		'id', 2,
+		'label', 'BItem 2 label')
+
+	.index()
+
+def CONDITION = """
+	(
+		/label=~.*AItem.*
+	)
+	or (
+		/@class==BItem
+	)
+	"""
+
+mapStructureBuilder
+	.traverseWhere(CONDITION)
+	.traverseFromPathWhere("/*", CONDITION)
+	.traverseFromContainerWhere(mapStructureBuilder.getValueAt("/*"), CONDITION)
+
+	.indexWhere(CONDITION)
+	.indexFromPathWhere("/*", CONDITION)
+	.indexFromContainerWhere(mapStructureBuilder.getValueAt("/*"), CONDITION)

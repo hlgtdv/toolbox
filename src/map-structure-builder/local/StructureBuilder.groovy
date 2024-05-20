@@ -28,7 +28,29 @@ public class StructureBuilder {
 			println "[After      ] End of traversal ${'-' * 102}"
 		}		
 	]
-	static def RE_IDENTIFIER = /\w+([-:]\w+)*/
+	static def INDEX_TRAVERSAL_HANDLER = [
+		beforeMapTraversal : { level, path, element ->
+			println "${path} -> ${element.getClass().simpleName}: { *=${element.size()}"
+		},
+		beforeListTraversal : { level, path, element ->
+			println "${path} -> ${element.getClass().simpleName}: [ *=${element.size()}"
+		},
+		onElementTraversal : { level, path, element ->
+			def value
+
+			if (element != null) {
+				if (element instanceof String) {
+					def p = element.indexOf("\n")
+					value = p > -1 ? element.substring(0, p) + " [...]" : element
+				}
+				else {
+					value = element
+				}
+			}
+			println "${path} -> ${element.getClass().simpleName}: ${value}"
+		},
+	]
+	static def RE_IDENTIFIER = /@?\w+([-:]\w+)*/
 
 	def yaml
 	def structure
@@ -188,7 +210,11 @@ public class StructureBuilder {
 	}
 
 	private def fetchCurrentElement(createIfAbsent) {
-		def currentElement = this.structure
+		this.fetchCurrentElementFromContainer(this.structure, createIfAbsent)
+	}
+
+	private def fetchCurrentElementFromContainer(container, createIfAbsent) {
+		def currentElement = container
 		def elem = this.elements[0]
 		def checkType = true
 
@@ -286,6 +312,16 @@ public class StructureBuilder {
 		return this.fetchCurrentElement(createIfAbsent)
 	}
 
+	private def getElementFromContainerAt(container, path, createIfAbsent = true) {
+		this.path = path
+
+		this.reset(false)
+		this.parsePath(path)
+		this.normalizeElements(createIfAbsent)
+
+		return this.fetchCurrentElementFromContainer(container, createIfAbsent)
+	}
+
 	private def addValuesAsMapContainerEntries(Object[] values, container) {
 		def key
 
@@ -305,38 +341,87 @@ public class StructureBuilder {
 		}
 	}
 
-	private def startTraversal(container, traversalHandler) {
+	private def buildGroovyExpression(condition) {
+		if (condition == null) {
+			return 'true'
+		}
+		def gCondition = condition
+		gCondition = gCondition.replace("(", " ( ")
+		gCondition = gCondition.replace(")", " ) ")
+		gCondition = gCondition.replaceAll(/([^\w])and([^\w])/, '$1 && $2')
+		gCondition = gCondition.replaceAll(/([^\w])or([^\w])/, '$1 || $2')
+		gCondition = gCondition.replaceAll(/\s+/, " ")
+		gCondition = " ${gCondition} "
+
+		gCondition.findAll(/[ ][^ ]+?==[^ ]+?[ ]/).each { expression ->
+			expression = expression.trim().replace("'", "\\'")
+			def parts = expression.split('==')
+			def left = parts[0]
+			def right = parts[1]
+			def gExpression = """String.valueOf(x.getValueFromContainerAt(y, '${left}', '[Undefined]')) == '${right}'"""
+
+			gCondition = gCondition.replace(expression, gExpression)
+		}
+		gCondition.findAll(/[ ][^ ]+?=~[^ ]+?[ ]/).each { expression ->
+			expression = expression.trim()
+			def parts = expression.split('=~')
+			def left = parts[0].replace("'", "\\'")
+			def right = parts[1]
+			def gExpression = """String.valueOf(x.getValueFromContainerAt(y, '${left}', '[Undefined]')) ==~ /${right}/"""
+
+			gCondition = gCondition.replace(expression, gExpression)
+		}
+		return gCondition
+	}
+
+	private def startTraversal(container, condition, traversalHandler) {
+		def gCondition = this.buildGroovyExpression(condition)
+
 		traversalHandler.beforeTraversal?.call()
-		this.doTraversal(0, [], container, traversalHandler)
+		this.doTraversal(0, [], container, gCondition, traversalHandler)
 		traversalHandler.afterTraversal?.call()
 	}
 
-	protected def doTraversal(level, accessors, element, traversalHandler) {
+	private def elementMatchesCondtion(element, gCondition) {
+		return Eval.xy(this, element, gCondition)
+	}
+
+	protected def doTraversal(level, accessors, element, condition, traversalHandler) {
+		def conditionMatched = this.elementMatchesCondtion(element, condition)
+		condition = conditionMatched ? 'true' : condition
 		def path = "/" + accessors.join("/")
 		path = path == "/" ? "${path}." : path
 
 		if (element instanceof Map) {
-			traversalHandler.beforeMapTraversal?.call(level, path, element)
-
+			if (conditionMatched) {
+				traversalHandler.beforeMapTraversal?.call(level, path, element)
+			}
 			element.each { key, value ->
 				accessors << key
-				this.doTraversal(level + 1, accessors, value, traversalHandler)
+				this.doTraversal(level + 1, accessors, value, condition, traversalHandler)
 				accessors.removeLast()
 			}
-			traversalHandler.afterMapTraversal?.call(level, path, element)
+			if (conditionMatched) {
+				traversalHandler.afterMapTraversal?.call(level, path, element)
+			}
 		}
 		else if (element instanceof List) {
-			traversalHandler.beforeListTraversal?.call(level, path, element)
-
+			if (conditionMatched) {
+				traversalHandler.beforeListTraversal?.call(level, path, element)
+			}
 			element.eachWithIndex { value, i ->
 				accessors << i + 1
-				this.doTraversal(level + 1, accessors, value, traversalHandler)
+				this.doTraversal(level + 1, accessors, value, condition, traversalHandler)
 				accessors.removeLast()
 			}
-			traversalHandler.afterListTraversal?.call(level, path, element)
+			if (conditionMatched) {
+				traversalHandler.afterListTraversal?.call(level, path, element)
+			}
 		}
 		else {
-			traversalHandler.onElementTraversal?.call(level, path, element)
+			if (conditionMatched) {
+				traversalHandler.onElementTraversal?.call(level, path, element)
+			}
 		}
 	}
 
@@ -385,13 +470,13 @@ public class StructureBuilder {
 		return alias in this.aliasIndex
 	}
 
-	def getValue(path) {
+	def getValueAt(path) {
 		def container = getElementAt(path, false)
 
 		return container
 	}
 
-	def getValue(path, defaultValue) {
+	def getValueAt(path, defaultValue) {
 		def container
 
 		try {
@@ -403,52 +488,71 @@ public class StructureBuilder {
 		return container
 	}
 
-	def traverse(traversalHandler = DEFAULT_TRAVERSAL_HANDLER) {
-		this.startTraversal(this.structure, traversalHandler)
+	def getValueFromContainerAt(container, path, defaultValue) {
+		try {
+			container = getElementFromContainerAt(container, path, false)
+		}
+		catch (Exception e) {
+			container = defaultValue
+		}
+		return container
+	}
+
+	def traverseWhere(condition, traversalHandler = DEFAULT_TRAVERSAL_HANDLER) {
+		this.startTraversal(this.structure, condition, traversalHandler)
 
 		return this
 	}
 
-	def traverseFromContainer(container, traversalHandler = DEFAULT_TRAVERSAL_HANDLER) {
-		this.startTraversal(container, traversalHandler)
+	def traverseFromContainerWhere(container, condition, traversalHandler = DEFAULT_TRAVERSAL_HANDLER) {
+		this.startTraversal(container, condition, traversalHandler)
 
 		return this
 	}
 
-	def traverseFromPath(path, traversalHandler = DEFAULT_TRAVERSAL_HANDLER) {
+	def traverseFromPathWhere(path, condition, traversalHandler = DEFAULT_TRAVERSAL_HANDLER) {
 		def container = getElementAt(path, false)
 
 		if (container != null) {
-			this.startTraversal(container, traversalHandler)
+			this.startTraversal(container, condition, traversalHandler)
 		}
 		return this
 	}
 
+	def traverse(traversalHandler = DEFAULT_TRAVERSAL_HANDLER) {
+		return this.traverseWhere(null)
+	}
+
+	def traverseFromContainer(container, traversalHandler = DEFAULT_TRAVERSAL_HANDLER) {
+		return this.traverseFromContainerWhere(container, null)
+	}
+
+	def traverseFromPath(path, traversalHandler = DEFAULT_TRAVERSAL_HANDLER) {
+		return this.traverseFromPathWhere(path, null)
+	}
+
+	def indexWhere(condition) {
+		return this.traverseWhere(condition, INDEX_TRAVERSAL_HANDLER)
+	}
+
+	def indexFromContainerWhere(container, condition) {
+		return this.traverseFromContainerWhere(container, condition, INDEX_TRAVERSAL_HANDLER)
+	}
+
+	def indexFromPathWhere(path, condition) {
+		return this.traverseFromPathWhere(path, condition, INDEX_TRAVERSAL_HANDLER)
+	}
+
 	def index() {
-		this.traverse([
-			beforeMapTraversal : { level, path, element ->
-				println "${path} -> ${element.getClass().simpleName}: { *=${element.size()}"
-			},
-			beforeListTraversal : { level, path, element ->
-				println "${path} -> ${element.getClass().simpleName}: [ *=${element.size()}"
-			},
-			onElementTraversal : { level, path, element ->
-				def value
+		return this.indexWhere(null)
+	}
 
-				if (element != null) {
-					if (element instanceof String) {
-						def p = element.indexOf("\n")
-						value = p > -1 ? element.substring(0, p) + " [...]" : element
-					}
-					else {
-						value = element
-					}
-				}
-				println "${path} -> ${element.getClass().simpleName}: ${value}"
-			},
-		])
+	def indexFromContainer(container) {
+		return this.indexFromContainerWhere(container, null)
+	}
 
-		return this
+	def indexFromPath(path) {
+		return this.indexFromPathWhere(path, null)
 	}
 
 	def debug(title) {
