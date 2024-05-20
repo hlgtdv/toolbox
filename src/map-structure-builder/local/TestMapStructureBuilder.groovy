@@ -138,7 +138,7 @@ mapStructureBuilder
 		'id', 1,
 		'label', 'AItem 1 label')
 	.addEntries("/+/.",
-		'@class', "'BItem'",
+		'@class', "BItem",
 		'id', 1,
 		'label', 'BItem 1 label')
 	.addEntries("/+/.",
@@ -166,6 +166,14 @@ mapStructureBuilder
 	.traverseFromPathWhere("/*", CONDITION)
 	.traverseFromContainerWhere(mapStructureBuilder.getValueAt("/*"), CONDITION)
 
+mapStructureBuilder
 	.indexWhere(CONDITION)
+println()
+
+mapStructureBuilder
 	.indexFromPathWhere("/*", CONDITION)
+println()
+
+mapStructureBuilder
 	.indexFromContainerWhere(mapStructureBuilder.getValueAt("/*"), CONDITION)
+println()

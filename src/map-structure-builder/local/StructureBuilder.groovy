@@ -382,12 +382,12 @@ public class StructureBuilder {
 		traversalHandler.afterTraversal?.call()
 	}
 
-	private def elementMatchesCondtion(element, gCondition) {
+	private def elementMatchesCondition(element, gCondition) {
 		return Eval.xy(this, element, gCondition)
 	}
 
 	protected def doTraversal(level, accessors, element, condition, traversalHandler) {
-		def conditionMatched = this.elementMatchesCondtion(element, condition)
+		def conditionMatched = this.elementMatchesCondition(element, condition)
 		condition = conditionMatched ? 'true' : condition
 		def path = "/" + accessors.join("/")
 		path = path == "/" ? "${path}." : path
