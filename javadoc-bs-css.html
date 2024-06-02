@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Bootstrap ScrollSpy</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+    html {
+        scroll-padding-top: 4rem;
+    }
+
+    /* Custom style to stick list group on top */
+    .list-group {
+        position: sticky;
+        top: 60px;
+    }
+
+    code {
+        white-space: pre;
+        color: darkblue;
+    }
+    </style>
+</head>
+
+<body>
+    <header class="container-fluid">
+        <nav class="navbar fixed-top bg-primary" data-bs-theme="dark">
+            <section>
+                <a class="navbar-brand" href="#">&nbsp;Class MyClass</a>
+            </section>
+        </nav>
+    </header>
+    <main class="container-fluid">
+        <div class="row bg-body-tertiary">
+            <div class="col-sm-2">
+                <section class="list-group">
+                    <a class="list-group-item list-group-item-action" href="#overview">Overview</a>
+                    <a class="list-group-item list-group-item-action" href="#constructors">Constructors</a>
+                    <a class="list-group-item list-group-item-action" href="#methods">Methods</a>
+                </section>
+            </div>
+            <div class="col-sm">
+                <section class="col-md pt-5">
+                    <!-- Overlapped by header -->
+                </section>
+                <section class="col-md pt-3">
+                    <h2 class="text-primary" id="overview">Overview</h2>
+                    <p class="lead">This is a class that performs some useful operations.</p>
+                </section>
+                <section>
+                    <h3 class="text-success" id="constructors">Constructors</h3>
+                    <table class="table table-striped">
+                        <tr>
+                            <th>Constructor and Description</th>
+                        </tr>
+                        <tr>
+                            <td>
+                                <a href="#constructor1">
+                                  <code><strong>MyClass</strong>()</code><br>
+                                </a>
+                                Constructs a new instance of the MyClass.
+                            </td>
+                        </tr>
+                    </table>
+                    <div class="card" id="constructor1">
+                        <div class="card-body">
+                            <h4 class="card-title"><code>public <strong>MyClass</strong>()</code></h4>
+                            <p class="card-text">Constructs a new instance of the MyClass.</p>
+                        </div>
+                    </div>
+                </section>
+                <section class="pt-3">
+                    <h3 class="text-success" id="methods">Methods</h3>
+                    <table class="table table-striped">
+                        <tr>
+                            <th width="20%">Modifier and Type</th>
+                            <th>Method and Description</th>
+                        </tr>
+                        <tr>
+                            <td><code>void</code></td>
+                            <td>
+                                <a href="#method1">
+                                  <code><strong>doSomething</strong>(int param1, int param2)</code><br>
+                                </a>
+                                Performs a useful operation.
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><code>void</code></td>
+                            <td>
+                                <a href="#method2">
+                                  <code><strong>doSomethingElse</strong>(int param3)</code><br>
+                                </a>
+                                Performs another useful operation.
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><code>void</code></td>
+                            <td>
+                                <a href="#method3">
+                                  <code><strong>doAnotherThing</strong>(int param3)</code><br>
+                                </a>
+                                Performs another useful operation.
+                            </td>
+                        </tr>
+                    </table>
+                    <div class="card" id="method1">
+                        <div class="card-body">
+                            <h4 class="card-title"><code>public void <strong>doSomething</strong>(int param1,
+                        int param2)</code></h4>
+                            <p class="card-text">Performs a useful operation.</p>
+                            <p class="card-text"><strong>Parameters:</strong></p>
+                            <ul class="card-text">
+                                <li><code>param1</code> - Description of the first parameter.</li>
+                                <li><code>param2</code> - Description of the second parameter.</li>
+                            </ul>
+                            <p class="card-text"><strong>Returns:</strong> Description of the return value.</p>
+                        </div>
+                    </div>
+                </section>
+                <section class="pt-2">
+                    <div class="card" id="method2">
+                        <div class="card-body">
+                            <h4 class="card-title"><code>public void <strong>doSomethingElse</strong>(int param3)</code></h4>
+                            <p class="card-text">Performs another useful operation.</p>
+                            <p class="card-text"><strong>Parameters:</strong></p>
+                            <ul class="card-text">
+                                <li><code>param3</code> - Description of the third parameter.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+                <section class="pt-2">
+                    <div class="card" id="method3">
+                        <div class="card-body">
+                            <h4 class="card-title"><code>public void <strong>doAnotherThing</strong>(int param3)</code></h4>
+                            <p class="card-text">Performs another useful operation.</p>
+                            <p class="card-text"><strong>Parameters:</strong></p>
+                            <ul class="card-text">
+                                <li><code>param3</code> - Description of the third parameter.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+                <section class="pt-2">
+                    <!-- space before footer -->
+                </section>
+                <section class="pt-5">
+                    <!-- Overlapped by footer -->
+                </section>
+            </div>
+        </div>
+    </main>
+    <footer class="container-fluid">
+        <nav class="navbar fixed-bottom" style="background-color: #CCC;">
+            <section>
+                <div class="text-white">&nbsp;Documentation</div>
+            </section>
+        </nav>
+    </footer>
+</body>
+
+</html>
