@@ -17,6 +17,10 @@
         top: 60px;
     }
 
+    a {
+        text-decoration: none;
+    } 
+
     code {
         white-space: pre;
         color: darkblue;
@@ -27,32 +31,35 @@
 <body>
     <header class="container-fluid">
         <nav class="navbar fixed-top bg-primary" data-bs-theme="dark">
-            <section>
+            <div>
                 <a class="navbar-brand" href="#">&nbsp;Class MyClass</a>
-            </section>
+            </div>
         </nav>
     </header>
     <main class="container-fluid">
-        <div class="row bg-body-tertiary">
+        <div class="row bg-primary bg-opacity-10">
             <div class="col-sm-2">
-                <section class="list-group">
-                    <a class="list-group-item list-group-item-action" href="#overview">Overview</a>
-                    <a class="list-group-item list-group-item-action" href="#constructors">Constructors</a>
-                    <a class="list-group-item list-group-item-action" href="#methods">Methods</a>
-                </section>
+                <div class="list-group">
+                    <a class="list-group-item list-group-item-action border-secondary" href="#overview">Overview</a>
+                    <a class="list-group-item list-group-item-action border-secondary" href="#constructors">Constructors</a>
+                    <a class="list-group-item list-group-item-action border-secondary" href="#methods">Methods</a>
+                </div>
             </div>
             <div class="col-sm">
-                <section class="col-md pt-5">
+                <div class="col-md pt-5">
                     <!-- Overlapped by header -->
-                </section>
-                <section class="col-md pt-3">
+                </div>
+                <div class="pt-2">
+                    <!-- Gap to first title -->
+                </div>
+                <section class="pt-2">
                     <h2 class="text-success" id="overview">Overview</h2>
                     <p class="lead">This is a class that performs some useful operations.</p>
                 </section>
-                <section>
+                <section class="pt-2">
                     <h2 class="text-success" id="constructors">Constructors</h2>
-                    <table class="table table-striped">
-                        <tr>
+                    <table class="table table-sm border table-borderless table-striped">
+                        <tr class="table-secondary">
                             <th>Constructor and Description</th>
                         </tr>
                         <tr>
@@ -64,17 +71,19 @@
                             </td>
                         </tr>
                     </table>
-                    <div class="card" id="constructor1">
-                        <div class="card-body">
-                            <h4 class="card-title"><code>public <strong>MyClass</strong>()</code></h4>
-                            <p class="card-text">Constructs a new instance of the MyClass.</p>
+                    <div class="pb-2">
+                        <div class="card border-secondary" id="constructor1">
+                            <div class="card-body">
+                                <h4 class="card-title"><code>public <strong>MyClass</strong>()</code></h4>
+                                <p class="card-text">Constructs a new instance of the MyClass.</p>
+                            </div>
                         </div>
                     </div>
                 </section>
-                <section class="pt-3">
+                <section class="pt-2">
                     <h2 class="text-success" id="methods">Methods</h2>
-                    <table class="table table-striped">
-                        <tr>
+                    <table class="table table-sm border table-borderless table-striped">
+                        <tr class="table-secondary">
                             <th width="20%">Modifier and Type</th>
                             <th>Method and Description</th>
                         </tr>
@@ -99,65 +108,64 @@
                         <tr>
                             <td><code>void</code></td>
                             <td>
-                                <a href="#method3">
+                                <a class="link-underline-light" href="#method3">
                                   <code><strong>doAnotherThing</strong>(int param3)</code><br>
                                 </a>
                                 Performs another useful operation.
                             </td>
                         </tr>
                     </table>
-                    <div class="card" id="method1">
-                        <div class="card-body">
-                            <h4 class="card-title"><code>public void <strong>doSomething</strong>(int param1,
+                    <div class="pb-2">
+                        <div class="card border-secondary" id="method1">
+                            <div class="card-body">
+                                <h4 class="card-title"><code>public void <strong>doSomething</strong>(int param1,
                         int param2)</code></h4>
-                            <p class="card-text">Performs a useful operation.</p>
-                            <p class="card-text"><strong>Parameters:</strong></p>
-                            <ul class="card-text">
-                                <li><code>param1</code> - Description of the first parameter.</li>
-                                <li><code>param2</code> - Description of the second parameter.</li>
-                            </ul>
-                            <p class="card-text"><strong>Returns:</strong> Description of the return value.</p>
+                                <p class="card-text">Performs a useful operation.</p>
+                                <p class="card-text"><strong>Parameters:</strong></p>
+                                <ul class="card-text">
+                                    <li><code>param1</code> - Description of the first parameter.</li>
+                                    <li><code>param2</code> - Description of the second parameter.</li>
+                                </ul>
+                                <p class="card-text"><strong>Returns:</strong> Description of the return value.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pb-2">
+                        <div class="card border-secondary" id="method2">
+                            <div class="card-body">
+                                <h4 class="card-title"><code>public void <strong>doSomethingElse</strong>(int param3)</code></h4>
+                                <p class="card-text">Performs another useful operation.</p>
+                                <p class="card-text"><strong>Parameters:</strong></p>
+                                <ul class="card-text">
+                                    <li><code>param3</code> - Description of the third parameter.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pb-2">
+                        <div class="card border-secondary" id="method3">
+                            <div class="card-body">
+                                <h4 class="card-title"><code>public void <strong>doAnotherThing</strong>(int param3)</code></h4>
+                                <p class="card-text">Performs another useful operation.</p>
+                                <p class="card-text"><strong>Parameters:</strong></p>
+                                <ul class="card-text">
+                                    <li><code>param3</code> - Description of the third parameter.</li>
+                                </ul>
+                            </div>
                         </div>
                     </div>
                 </section>
-                <section class="pt-2">
-                    <div class="card" id="method2">
-                        <div class="card-body">
-                            <h4 class="card-title"><code>public void <strong>doSomethingElse</strong>(int param3)</code></h4>
-                            <p class="card-text">Performs another useful operation.</p>
-                            <p class="card-text"><strong>Parameters:</strong></p>
-                            <ul class="card-text">
-                                <li><code>param3</code> - Description of the third parameter.</li>
-                            </ul>
-                        </div>
-                    </div>
-                </section>
-                <section class="pt-2">
-                    <div class="card" id="method3">
-                        <div class="card-body">
-                            <h4 class="card-title"><code>public void <strong>doAnotherThing</strong>(int param3)</code></h4>
-                            <p class="card-text">Performs another useful operation.</p>
-                            <p class="card-text"><strong>Parameters:</strong></p>
-                            <ul class="card-text">
-                                <li><code>param3</code> - Description of the third parameter.</li>
-                            </ul>
-                        </div>
-                    </div>
-                </section>
-                <section class="pt-2">
-                    <!-- space before footer -->
-                </section>
-                <section class="pt-5">
+                <div class="pt-5">
                     <!-- Overlapped by footer -->
-                </section>
+                </div>
             </div>
         </div>
     </main>
     <footer class="container-fluid">
-        <nav class="navbar fixed-bottom" style="background-color: #CCC;">
-            <section>
+        <nav class="navbar fixed-bottom bg-secondary">
+            <div>
                 <div class="text-white">&nbsp;Documentation</div>
-            </section>
+            </div>
         </nav>
     </footer>
 </body>
