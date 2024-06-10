@@ -9,33 +9,36 @@ public class StructureBuilder {
 		beforeTraversal : {
 			println "[Before     ] Start of traversal ${'-' * 100}"
 		},
-		beforeMapTraversal : { level, path, element ->
-			println "[Before Map ] At level ${level}, ${path} -> ${element} : ${element.getClass().simpleName}"
+		beforeMapTraversal : { level, index, path, element, isSelected = null ->
+			println "[Before Map ] At level ${level}, at index ${index}, ${path} -> ${element} : ${element.getClass().simpleName}"
 		},
-		afterMapTraversal : { level, path, element ->
-			println "[After Map  ] At level ${level}, ${path} -> ${element} : ${element.getClass().simpleName}"
+		afterMapTraversal : { level, index, path, element, isSelected = null ->
+			println "[After Map  ] At level ${level}, at index ${index}, ${path} -> ${element} : ${element.getClass().simpleName}"
 		},
-		beforeListTraversal : { level, path, element ->
-			println "[Before List] At level ${level}, ${path} -> ${element} : ${element.getClass().simpleName}"
+		beforeListTraversal : { level, index, path, element ->
+			println "[Before List] At level ${level}, at index ${index}, ${path} -> ${element} : ${element.getClass().simpleName}"
 		},
-		afterListTraversal : { level, path, element ->
-			println "[After List ] At level ${level}, ${path} -> ${element} : ${element.getClass().simpleName}"
+		afterListTraversal : { level, index, path, element ->
+			println "[After List ] At level ${level}, at index ${index}, ${path} -> ${element} : ${element.getClass().simpleName}"
 		},
-		onElementTraversal : { level, path, element ->
-			println "[Element    ] At level ${level}, ${path} -> ${element} : ${element.getClass().simpleName}"
+		onElementTraversal : { level, index, path, element ->
+			println "[Element    ] At level ${level}, at index ${index}, ${path} -> ${element} : ${element.getClass().simpleName}"
 		},
 		afterTraversal : {
 			println "[After      ] End of traversal ${'-' * 102}"
+			println()
 		}		
 	]
 	static def INDEX_TRAVERSAL_HANDLER = [
-		beforeMapTraversal : { level, path, element ->
-			println "${path} -> ${element.getClass().simpleName}: { *=${element.size()}"
+		beforeMapTraversal : { level, index, path, element, isSelected = null ->
+			def selection = isSelected ? '+' : ' '
+			println "${selection}_${level}-${index}: ${path} -> ${element.getClass().simpleName}: { *=${element.size()}"
 		},
-		beforeListTraversal : { level, path, element ->
-			println "${path} -> ${element.getClass().simpleName}: [ *=${element.size()}"
+		beforeListTraversal : { level, index, path, element, isSelected = null ->
+			def selection = isSelected ? '+' : ' '
+			println "${selection}_${level}-${index}: ${path} -> ${element.getClass().simpleName}: [ *=${element.size()}"
 		},
-		onElementTraversal : { level, path, element ->
+		onElementTraversal : { level, index, path, element ->
 			def value
 
 			if (element != null) {
@@ -47,8 +50,11 @@ public class StructureBuilder {
 					value = element
 				}
 			}
-			println "${path} -> ${element.getClass().simpleName}: ${value}"
+			println " _${level}-${index}: ${path} -> ${element.getClass().simpleName}: ${value}"
 		},
+		afterTraversal : {
+			println()
+		}		
 	]
 	static def RE_IDENTIFIER = /@?\w+([-:]\w+)*/
 
@@ -113,7 +119,7 @@ public class StructureBuilder {
 		if (this.lookAhead('@')) {
 			this.readToken('@')
 			identifier = this.readTokenAsRegex(RE_IDENTIFIER)
-                                    							this.manageAlias(identifier, true)
+                                    								this.manageAlias(identifier, true)
 		}
 
 		while (! this.lookAhead('<EOL>')) {
@@ -121,29 +127,29 @@ public class StructureBuilder {
 
 			if (this.lookAhead('*')) {
 				token = this.readToken('*')
-																this.manageElementBy(token)
+																	this.manageElementBy(token)
 			}
 			else if (this.lookAhead('+')) {
 				token = this.readToken('+')
-																this.manageElementBy(token)
+																	this.manageElementBy(token)
 			}
 			else if (this.lookAheadAsRegex(/\d+/)) {
 				integer = this.readTokenAsRegex(/\d+/)
-																this.manageElementBy(integer)
+																	this.manageElementBy(integer)
 			}
 			else if (this.lookAheadAsRegex(RE_IDENTIFIER)) {
 				identifier = this.readTokenAsRegex(RE_IDENTIFIER)
-																this.manageElementBy(identifier)
+																	this.manageElementBy(identifier)
 			}
 			else {
 				token = this.readToken('.')
-																this.manageElementBy(token)
+																	this.manageElementBy(token)
 			}
 
 			if (this.lookAhead('@')) {
 				this.readToken('@')
 				identifier = this.readTokenAsRegex(RE_IDENTIFIER)
-																this.manageAlias(identifier) 
+																	this.manageAlias(identifier) 
 			}
 		}
 		this.readToken('<EOL>')
@@ -341,86 +347,49 @@ public class StructureBuilder {
 		}
 	}
 
-	private def buildGroovyExpression(condition) {
-		if (condition == null) {
-			return 'true'
-		}
-		def gCondition = condition
-		gCondition = gCondition.replace("(", " ( ")
-		gCondition = gCondition.replace(")", " ) ")
-		gCondition = gCondition.replaceAll(/([^\w])and([^\w])/, '$1 && $2')
-		gCondition = gCondition.replaceAll(/([^\w])or([^\w])/, '$1 || $2')
-		gCondition = gCondition.replaceAll(/\s+/, " ")
-		gCondition = " ${gCondition} "
-
-		gCondition.findAll(/[ ][^ ]+?==[^ ]+?[ ]/).each { expression ->
-			expression = expression.trim().replace("'", "\\'")
-			def parts = expression.split('==')
-			def left = parts[0]
-			def right = parts[1]
-			def gExpression = """String.valueOf(x.getValueFromContainerAt(y, '${left}', '[Undefined]')) == '${right}'"""
-
-			gCondition = gCondition.replace(expression, gExpression)
-		}
-		gCondition.findAll(/[ ][^ ]+?=~[^ ]+?[ ]/).each { expression ->
-			expression = expression.trim()
-			def parts = expression.split('=~')
-			def left = parts[0].replace("'", "\\'")
-			def right = parts[1]
-			def gExpression = """String.valueOf(x.getValueFromContainerAt(y, '${left}', '[Undefined]')) ==~ /${right}/"""
-
-			gCondition = gCondition.replace(expression, gExpression)
-		}
-		return gCondition
-	}
-
-	private def startTraversal(container, condition, traversalHandler) {
-		def gCondition = this.buildGroovyExpression(condition)
+	private def startTraversal(container, selection, showAll, traversalHandler) {
+		def isParentSelected = false
 
 		traversalHandler.beforeTraversal?.call()
-		this.doTraversal(0, [], container, gCondition, traversalHandler)
+		this.doTraversal(0, 0, [], container, showAll, isParentSelected, selection, traversalHandler)
 		traversalHandler.afterTraversal?.call()
 	}
 
-	private def elementMatchesCondition(element, gCondition) {
-		return Eval.xy(this, element, gCondition)
-	}
-
-	protected def doTraversal(level, accessors, element, condition, traversalHandler) {
-		def conditionMatched = this.elementMatchesCondition(element, condition)
-		condition = conditionMatched ? 'true' : condition
+	protected def doTraversal(level, index, accessors, element, showAll, isParentSelected, selection, traversalHandler) {
 		def path = "/" + accessors.join("/")
 		path = path == "/" ? "${path}." : path
 
 		if (element instanceof Map) {
-			if (conditionMatched) {
-				traversalHandler.beforeMapTraversal?.call(level, path, element)
+			def isSelected = selection == null ? null : selection.call(element)
+
+			if (showAll || isParentSelected || isSelected) {
+				traversalHandler.beforeMapTraversal?.call(level, index, path, element, isSelected)
 			}
-			element.each { key, value ->
+			element.eachWithIndex { key, value, i ->
 				accessors << key
-				this.doTraversal(level + 1, accessors, value, condition, traversalHandler)
+				this.doTraversal(level + 1, i, accessors, value, showAll, isParentSelected || isSelected, selection, traversalHandler)
 				accessors.removeLast()
 			}
-			if (conditionMatched) {
-				traversalHandler.afterMapTraversal?.call(level, path, element)
+			if (showAll || isParentSelected || isSelected) {
+				traversalHandler.afterMapTraversal?.call(level, index, path, element, isSelected)
 			}
 		}
 		else if (element instanceof List) {
-			if (conditionMatched) {
-				traversalHandler.beforeListTraversal?.call(level, path, element)
+			if (showAll || isParentSelected) {
+				traversalHandler.beforeListTraversal?.call(level, index, path, element)
 			}
 			element.eachWithIndex { value, i ->
 				accessors << i + 1
-				this.doTraversal(level + 1, accessors, value, condition, traversalHandler)
+				this.doTraversal(level + 1, i, accessors, value, showAll, isParentSelected, selection, traversalHandler)
 				accessors.removeLast()
 			}
-			if (conditionMatched) {
-				traversalHandler.afterListTraversal?.call(level, path, element)
+			if (showAll || isParentSelected) {
+				traversalHandler.afterListTraversal?.call(level, index, path, element)
 			}
 		}
 		else {
-			if (conditionMatched) {
-				traversalHandler.onElementTraversal?.call(level, path, element)
+			if (showAll || isParentSelected) {
+				traversalHandler.onElementTraversal?.call(level, index, path, element)
 			}
 		}
 	}
@@ -498,23 +467,23 @@ public class StructureBuilder {
 		return container
 	}
 
-	def traverseWhere(condition, traversalHandler = DEFAULT_TRAVERSAL_HANDLER) {
-		this.startTraversal(this.structure, condition, traversalHandler)
+	def traverseWhere(condition, traversalHandler = DEFAULT_TRAVERSAL_HANDLER, showAll = true) {
+		this.startTraversal(this.structure, condition, showAll, traversalHandler)
 
 		return this
 	}
 
-	def traverseFromContainerWhere(container, condition, traversalHandler = DEFAULT_TRAVERSAL_HANDLER) {
-		this.startTraversal(container, condition, traversalHandler)
+	def traverseFromContainerWhere(container, condition, traversalHandler = DEFAULT_TRAVERSAL_HANDLER, showAll = true) {
+		this.startTraversal(container, condition, showAll, traversalHandler)
 
 		return this
 	}
 
-	def traverseFromPathWhere(path, condition, traversalHandler = DEFAULT_TRAVERSAL_HANDLER) {
+	def traverseFromPathWhere(path, condition, traversalHandler = DEFAULT_TRAVERSAL_HANDLER, showAll = true) {
 		def container = getElementAt(path, false)
 
 		if (container != null) {
-			this.startTraversal(container, condition, traversalHandler)
+			this.startTraversal(container, condition, showAll, traversalHandler)
 		}
 		return this
 	}
@@ -531,16 +500,16 @@ public class StructureBuilder {
 		return this.traverseFromPathWhere(path, null)
 	}
 
-	def indexWhere(condition) {
-		return this.traverseWhere(condition, INDEX_TRAVERSAL_HANDLER)
+	def indexWhere(condition, showAll = true) {
+		return this.traverseWhere(condition, INDEX_TRAVERSAL_HANDLER, showAll)
 	}
 
-	def indexFromContainerWhere(container, condition) {
-		return this.traverseFromContainerWhere(container, condition, INDEX_TRAVERSAL_HANDLER)
+	def indexFromContainerWhere(container, condition, showAll = true) {
+		return this.traverseFromContainerWhere(container, condition, INDEX_TRAVERSAL_HANDLER, showAll)
 	}
 
-	def indexFromPathWhere(path, condition) {
-		return this.traverseFromPathWhere(path, condition, INDEX_TRAVERSAL_HANDLER)
+	def indexFromPathWhere(path, condition, showAll = true) {
+		return this.traverseFromPathWhere(path, condition, INDEX_TRAVERSAL_HANDLER, showAll)
 	}
 
 	def index() {

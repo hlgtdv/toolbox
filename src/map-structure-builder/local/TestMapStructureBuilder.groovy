@@ -1,4 +1,6 @@
-def mapStructureBuilder = new local.MapStructureBuilder()
+import local.MapStructureBuilder
+
+def mapStructureBuilder = new MapStructureBuilder()
 //______________________________________________________________________________
 //
 mapStructureBuilder
@@ -149,31 +151,20 @@ mapStructureBuilder
 		'@class', 'BItem',
 		'id', 2,
 		'label', 'BItem 2 label')
+	.addEntries("/+/.",
+		'@class', 'CItem',
+		'id', 1,
+		'label', 'CItem 1 label')
 
 	.index()
 
-def CONDITION = """
-	(
-		/label=~.*AItem.*
-	)
-	or (
-		/@class==BItem
-	)
-	"""
+def CONDITION = { element -> element?.'@class' != 'BItem' }
 
 mapStructureBuilder
 	.traverseWhere(CONDITION)
 	.traverseFromPathWhere("/*", CONDITION)
 	.traverseFromContainerWhere(mapStructureBuilder.getValueAt("/*"), CONDITION)
 
-mapStructureBuilder
-	.indexWhere(CONDITION)
-println()
-
-mapStructureBuilder
-	.indexFromPathWhere("/*", CONDITION)
-println()
-
-mapStructureBuilder
-	.indexFromContainerWhere(mapStructureBuilder.getValueAt("/*"), CONDITION)
-println()
+	.indexWhere(CONDITION, false)
+	.indexFromPathWhere("/*", CONDITION, false)
+	.indexFromContainerWhere(mapStructureBuilder.getValueAt("/*"), CONDITION, false)
