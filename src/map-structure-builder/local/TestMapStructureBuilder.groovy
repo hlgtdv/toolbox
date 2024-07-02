@@ -168,3 +168,27 @@ mapStructureBuilder
 	.indexWhere(CONDITION, false)
 	.indexFromPathWhere("/*", CONDITION, false)
 	.indexFromContainerWhere(mapStructureBuilder.getValueAt("/*"), CONDITION, false)
+
+mapStructureBuilder
+	.selectWhere()
+	.index()
+
+mapStructureBuilder
+	.selectFromPathWhere("/*")
+	.index()
+
+mapStructureBuilder
+	.selectFromContainerWhere(mapStructureBuilder.getValueAt("/*"))
+	.index()
+
+mapStructureBuilder
+	.selectWhere(CONDITION)
+	.index()
+
+mapStructureBuilder
+	.selectFromPathWhere("/*", CONDITION)
+	.index()
+
+mapStructureBuilder
+	.selectFromContainerWhere(mapStructureBuilder.getValueAt("/*"), CONDITION)
+	.index()

@@ -56,6 +56,16 @@ public class StructureBuilder {
 			println()
 		}		
 	]
+	def SELECT_TRAVERSAL_HANDLER = [
+		beforeTraversal : {
+			this.selection = []
+		},
+		afterMapTraversal : { level, index, path, element, isSelected = null ->
+			if (isSelected) {
+				this.selection << element
+			}			
+		},
+	]
 	static def RE_IDENTIFIER = /@?\w+([-:]\w+)*/
 
 	def yaml
@@ -64,13 +74,16 @@ public class StructureBuilder {
 	def path
 	def parsedPath
 	def elements
+	def selection
 
-	StructureBuilder() {
+	StructureBuilder(structure = null) {
 		def dumperOptions = new DumperOptions()
 		dumperOptions.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK)
 
 		this.yaml = new Yaml(dumperOptions)
 		this.reset()
+
+		this.structure = structure
 	}
 
 	private def lookAhead(token) {
@@ -360,7 +373,7 @@ public class StructureBuilder {
 		path = path == "/" ? "${path}." : path
 
 		if (element instanceof Map) {
-			def isSelected = selection == null ? null : selection.call(element)
+			def isSelected = selection == null ? true : selection.call(element)
 
 			if (showAll || isParentSelected || isSelected) {
 				traversalHandler.beforeMapTraversal?.call(level, index, path, element, isSelected)
@@ -522,6 +535,24 @@ public class StructureBuilder {
 
 	def indexFromPath(path) {
 		return this.indexFromPathWhere(path, null)
+	}
+
+	def selectWhere(condition = null) {
+		this.traverseWhere(condition, SELECT_TRAVERSAL_HANDLER, true)
+
+		return new StructureBuilder(this.selection)
+	}
+
+	def selectFromContainerWhere(container, condition = null) {
+		this.traverseFromContainerWhere(container, condition, SELECT_TRAVERSAL_HANDLER, true)
+
+		return new StructureBuilder(this.selection)
+	}
+
+	def selectFromPathWhere(path, condition = null) {
+		this.traverseFromPathWhere(path, condition, SELECT_TRAVERSAL_HANDLER, true)
+
+		return new StructureBuilder(this.selection)
 	}
 
 	def debug(title) {
