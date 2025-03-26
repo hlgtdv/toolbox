@@ -22,6 +22,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 
+import java.util.Collections;
 import java.nio.charset.StandardCharsets;
 
 import org.springframework.util.StreamUtils;
@@ -42,18 +43,42 @@ public class WSExecutionFilter implements Filter {
         ContentCachingResponseWrapper contentCachingResponseWrapper = 
             new ContentCachingResponseWrapper((HttpServletResponse) servletResponse);
 
+        String httpMethod = cachedHttpServletRequest.getMethod();
+        String requestUrl = cachedHttpServletRequest.getRequestURL().toString();
+        String queryString = cachedHttpServletRequest.getQueryString();
+        String requestBody = cachedHttpServletRequest.getCachedBody();
+
+        queryString = queryString == null ? "" : queryString;
+
         System.out.println("### REQUEST BODY BEGIN ###########################");
-        System.out.println(cachedHttpServletRequest.getCachedBody());
+        System.out.println(httpMethod + " " + requestUrl + queryString);
+
+        for (String headerName : Collections.list(cachedHttpServletRequest.getHeaderNames())) {
+            String headerValue = cachedHttpServletRequest.getHeader(headerName);
+
+            System.out.println(headerName + ": " + headerValue);
+        }
+        System.out.println(requestBody);
         System.out.println("### REQUEST BODY END   ###########################");
 
         filterChain.doFilter(cachedHttpServletRequest, contentCachingResponseWrapper);
 
-        System.out.println("### RESPONSE BODY BEGIN ###########################");
-        System.out.println(new String(contentCachingResponseWrapper.getContentAsByteArray(),
-            contentCachingResponseWrapper.getCharacterEncoding()));
-        System.out.println("### RESPONSE BODY END   ###########################");
+        int httpStatus = contentCachingResponseWrapper.getStatus();
+        String responseBody = new String(contentCachingResponseWrapper.getContentAsByteArray(),
+            contentCachingResponseWrapper.getCharacterEncoding());
 
         contentCachingResponseWrapper.copyBodyToResponse();
+
+        System.out.println("### RESPONSE BODY BEGIN ###########################");
+        System.out.println(httpStatus);
+
+        for (String headerName : contentCachingResponseWrapper.getHeaderNames()) {
+            String headerValue = contentCachingResponseWrapper.getHeader(headerName);
+
+            System.out.println(headerName + ": " + headerValue);
+        }
+        System.out.println(responseBody);
+        System.out.println("### RESPONSE BODY END   ###########################");
     }
 
     private class CachedHttpServletRequest extends HttpServletRequestWrapper {
